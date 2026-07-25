@@ -115,7 +115,17 @@ function classCsv(analysis) { return toCsv([["참여 학생 수", analysis.parti
 async function loginTeacher() { if (!firebaseStore.enabled) { setText("#teacher-auth-status", "Firebase 환경 변수가 아직 배포되지 않았습니다."); return; } try { const user = await firebaseStore.signInTeacher(); if (user) setText("#teacher-auth-status", `${user.email} 계정으로 로그인했습니다.`); else setText("#teacher-auth-status", "Google 로그인 화면으로 이동합니다. 계정을 선택하면 이 페이지로 돌아옵니다."); } catch (error) { console.warn("Google 로그인 실패", error); setText("#teacher-auth-status", `로그인에 실패했습니다. (${error.code || "알 수 없는 오류"})`); } }
 async function loadFirebaseResults() { const requestedClass = $("#teacher-class-code").value.trim(); const requestedActivity = $("#teacher-activity-code").value.trim(); if (!validCode(requestedClass) || !validCode(requestedActivity)) { setText("#teacher-auth-status", "학급 코드와 활동 코드를 확인해 주세요."); return; } if (!firebaseStore.currentUser) { setText("#teacher-auth-status", "먼저 Google 로그인을 해주세요."); return; } try { const results = await firebaseStore.loadTeacherResults(requestedClass, requestedActivity); presentTeacherResults(results); setText("#teacher-auth-status", `${results.length}명의 Firebase 결과를 불러왔습니다.`); } catch (error) { console.warn("교사 결과 조회 실패", error); setText("#teacher-auth-status", "조회 권한이 없습니다. Firestore 교사 권한 설정을 확인해 주세요."); } }
 
+async function restoreTeacherAfterRedirect() {
+  if (!firebaseStore.enabled || sessionStorage.getItem("idiomTeacherLoginRequested") !== "true") return;
+  await firebaseStore.waitForAuthReady();
+  sessionStorage.removeItem("idiomTeacherLoginRequested");
+  if (!firebaseStore.isGoogleTeacherSignedIn) return;
+  openTeacher();
+  setText("#teacher-auth-status", `${firebaseStore.currentUser.email} 계정으로 로그인했습니다.`);
+}
+
 $("#start-form").addEventListener("submit", (event) => { event.preventDefault(); startQuiz(); });
 $("#next-button").addEventListener("click", () => { if (questionIndex === questions.length - 1) finishQuiz(); else { questionIndex += 1; renderQuestion(); } });
 $("#quit-button").addEventListener("click", () => show("start")); $("#restart-button").addEventListener("click", () => show("start")); $("#teacher-open-button").addEventListener("click", openTeacher); $("#teacher-close-button").addEventListener("click", () => show("start"));
 $("#student-print-button").addEventListener("click", () => window.print()); $("#teacher-print-button").addEventListener("click", () => window.print()); $("#teacher-login-button").addEventListener("click", loginTeacher); $("#teacher-load-button").addEventListener("click", loadFirebaseResults);
+restoreTeacherAfterRedirect();
