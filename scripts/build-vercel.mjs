@@ -22,8 +22,8 @@ const firebaseConfig = {
 };
 const configured = Object.values(firebaseConfig).slice(0, 6).every(Boolean);
 const configSource = configured
-  ? `window.FIREBASE_CONFIG = ${JSON.stringify(firebaseConfig)};\n`
-  : "// Firebase 환경 변수가 없어 로컬 저장 방식으로 실행합니다.\nwindow.FIREBASE_CONFIG = null;\n";
+  ? `window.IDIOM_FIREBASE_CONFIG = ${JSON.stringify(firebaseConfig)};\n`
+  : "// Firebase 환경 변수가 없어 로컬 저장 방식으로 실행합니다.\nwindow.IDIOM_FIREBASE_CONFIG = null;\n";
 await writeFile(`${outputDirectory}/js/firebase-config.js`, configSource, "utf8");
 
 console.log("학생용 웹앱 배포 파일을 준비했습니다.");

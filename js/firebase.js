@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const config = window.FIREBASE_CONFIG;
+  const config = window.IDIOM_FIREBASE_CONFIG;
   let app;
   let auth;
   let db;
