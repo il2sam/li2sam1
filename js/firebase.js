@@ -52,11 +52,17 @@
     await responsePath(result.classCode, result.activityCode, result.studentNumber).create(data);
   }
 
+  function isGoogleTeacherSignedIn() {
+    return Boolean(auth && auth.currentUser && auth.currentUser.providerData.some((provider) => provider.providerId === "google.com"));
+  }
+
   async function signInTeacher() {
     requireReady();
+    if (isGoogleTeacherSignedIn()) return auth.currentUser;
     const provider = new firebase.auth.GoogleAuthProvider();
-    await auth.signInWithPopup(provider);
-    return auth.currentUser;
+    // 팝업이 차단될 수 있는 학교용 브라우저에서도 작동하도록 로그인 뒤 원래 페이지로 돌아오는 방식을 사용합니다.
+    await auth.signInWithRedirect(provider);
+    return null;
   }
 
   async function signOutTeacher() {
@@ -75,6 +81,7 @@
   window.firebaseStore = {
     get enabled() { return enabled(); },
     get currentUser() { return auth && auth.currentUser; },
+    get isGoogleTeacherSignedIn() { return isGoogleTeacherSignedIn(); },
     ensureStudentAuth,
     submitStudentResult,
     signInTeacher,

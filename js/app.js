@@ -95,6 +95,7 @@ function presentTeacherResults(results) {
 
 function openTeacher() {
   $("#teacher-class-code").value = $("#class-code").value.trim(); $("#teacher-activity-code").value = $("#activity-code").value.trim();
+  if (firebaseStore.enabled && firebaseStore.isGoogleTeacherSignedIn) setText("#teacher-auth-status", `${firebaseStore.currentUser.email} 계정으로 로그인했습니다.`);
   presentTeacherResults(loadResults()); show("teacher");
 }
 
@@ -111,7 +112,7 @@ function renderClassAnalysis(analysis) {
 function renderTeacherStudent(result) { const section = $("#selected-student-section"); section.hidden = !result; if (!result) return; setText("#selected-student-number", result.studentNumber); $("#teacher-student-table tbody").innerHTML = result.answers.map((answer) => `<tr><td>${answer.questionNumber}</td><td>${escapeHtml(answer.firstChoice)}</td><td>${answer.firstAttemptCorrect ? "정답" : "오답"}</td><td>${seconds(answer.responseTimeMs)}</td><td>${answer.attemptCount}</td></tr>`).join(""); }
 function classCsv(analysis) { return toCsv([["참여 학생 수", analysis.participantCount], ["전체 평균 점수", analysis.averageScore.toFixed(1)], ["전체 첫 응답 정답률", `${analysis.accuracy.toFixed(1)}%`], [], ["문항", "정답 인원", "응답 인원", "정답률", "평균 응답 시간", "중앙값 응답 시간", "선택지 응답 분포"], ...analysis.questionStats.map((stat) => [stat.question.id, stat.correct, stat.answered, `${stat.accuracy.toFixed(1)}%`, seconds(stat.averageTime), seconds(stat.medianTime), stat.question.options.map((option) => `${option}: ${stat.distribution[option]}명`).join(" | ")])]); }
 
-async function loginTeacher() { if (!firebaseStore.enabled) { setText("#teacher-auth-status", "Firebase 환경 변수가 아직 배포되지 않았습니다."); return; } try { const user = await firebaseStore.signInTeacher(); setText("#teacher-auth-status", `${user.email} 계정으로 로그인했습니다.`); } catch (error) { setText("#teacher-auth-status", "로그인에 실패했습니다. 팝업 차단 여부를 확인해 주세요."); } }
+async function loginTeacher() { if (!firebaseStore.enabled) { setText("#teacher-auth-status", "Firebase 환경 변수가 아직 배포되지 않았습니다."); return; } try { const user = await firebaseStore.signInTeacher(); if (user) setText("#teacher-auth-status", `${user.email} 계정으로 로그인했습니다.`); else setText("#teacher-auth-status", "Google 로그인 화면으로 이동합니다. 계정을 선택하면 이 페이지로 돌아옵니다."); } catch (error) { console.warn("Google 로그인 실패", error); setText("#teacher-auth-status", `로그인에 실패했습니다. (${error.code || "알 수 없는 오류"})`); } }
 async function loadFirebaseResults() { const requestedClass = $("#teacher-class-code").value.trim(); const requestedActivity = $("#teacher-activity-code").value.trim(); if (!validCode(requestedClass) || !validCode(requestedActivity)) { setText("#teacher-auth-status", "학급 코드와 활동 코드를 확인해 주세요."); return; } if (!firebaseStore.currentUser) { setText("#teacher-auth-status", "먼저 Google 로그인을 해주세요."); return; } try { const results = await firebaseStore.loadTeacherResults(requestedClass, requestedActivity); presentTeacherResults(results); setText("#teacher-auth-status", `${results.length}명의 Firebase 결과를 불러왔습니다.`); } catch (error) { console.warn("교사 결과 조회 실패", error); setText("#teacher-auth-status", "조회 권한이 없습니다. Firestore 교사 권한 설정을 확인해 주세요."); } }
 
 $("#start-form").addEventListener("submit", (event) => { event.preventDefault(); startQuiz(); });
