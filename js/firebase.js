@@ -23,6 +23,8 @@
   async function ensureStudentAuth() {
     requireReady();
     if (!auth.currentUser) await auth.signInAnonymously();
+    // 익명 로그인 직후에도 Firestore 규칙이 인증 정보를 확인할 수 있게 토큰을 갱신합니다.
+    await auth.currentUser.getIdToken(true);
     return auth.currentUser.uid;
   }
 
