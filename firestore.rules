@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 승인된 Google 교사 계정만 전체 결과를 읽고 관리할 수 있습니다.
+    function isTeacher() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'cbedu2026@gmail.com';
+    }
+
+    function isAnonymousStudent() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    match /classes/{classCode}/activities/{activityCode}/responses/{studentNumber} {
+      // 학생은 자신의 익명 로그인 식별자와 일치하는 새 결과만 제출할 수 있습니다.
+      allow create: if isAnonymousStudent()
+        && request.resource.data.classCode == classCode
+        && request.resource.data.activityCode == activityCode
+        && request.resource.data.studentNumber == studentNumber
+        && request.resource.data.studentUid == request.auth.uid;
+
+      // 학생은 다른 학생의 결과를 읽거나 바꿀 수 없습니다.
+      allow read, update, delete: if isTeacher();
+    }
+  }
+}
