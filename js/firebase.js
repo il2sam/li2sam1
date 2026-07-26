@@ -62,18 +62,17 @@
     const provider = new firebase.auth.GoogleAuthProvider();
     // 팝업이 차단될 수 있는 학교용 브라우저에서도 작동하도록 로그인 뒤 원래 페이지로 돌아오는 방식을 사용합니다.
     sessionStorage.setItem("idiomTeacherLoginRequested", "true");
+    const returnUrl = new URL(window.location.href);
+    returnUrl.searchParams.set("teacherLogin", "1");
+    window.history.replaceState({}, "", returnUrl);
     await auth.signInWithRedirect(provider);
     return null;
   }
 
-  async function waitForAuthReady() {
+  async function completeTeacherRedirect() {
     requireReady();
-    return new Promise((resolve) => {
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        unsubscribe();
-        resolve(user);
-      });
-    });
+    const result = await auth.getRedirectResult();
+    return result?.user || auth.currentUser;
   }
 
   async function signOutTeacher() {
@@ -96,7 +95,7 @@
     ensureStudentAuth,
     submitStudentResult,
     signInTeacher,
-    waitForAuthReady,
+    completeTeacherRedirect,
     signOutTeacher,
     loadTeacherResults
   };

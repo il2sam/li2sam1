@@ -116,9 +116,13 @@ async function loginTeacher() { if (!firebaseStore.enabled) { setText("#teacher-
 async function loadFirebaseResults() { const requestedClass = $("#teacher-class-code").value.trim(); const requestedActivity = $("#teacher-activity-code").value.trim(); if (!validCode(requestedClass) || !validCode(requestedActivity)) { setText("#teacher-auth-status", "학급 코드와 활동 코드를 확인해 주세요."); return; } if (!firebaseStore.currentUser) { setText("#teacher-auth-status", "먼저 Google 로그인을 해주세요."); return; } try { const results = await firebaseStore.loadTeacherResults(requestedClass, requestedActivity); presentTeacherResults(results); setText("#teacher-auth-status", `${results.length}명의 Firebase 결과를 불러왔습니다.`); } catch (error) { console.warn("교사 결과 조회 실패", error); setText("#teacher-auth-status", "조회 권한이 없습니다. Firestore 교사 권한 설정을 확인해 주세요."); } }
 
 async function restoreTeacherAfterRedirect() {
-  if (!firebaseStore.enabled || sessionStorage.getItem("idiomTeacherLoginRequested") !== "true") return;
-  await firebaseStore.waitForAuthReady();
+  const url = new URL(window.location.href);
+  const requested = sessionStorage.getItem("idiomTeacherLoginRequested") === "true" || url.searchParams.get("teacherLogin") === "1";
+  if (!firebaseStore.enabled || !requested) return;
+  await firebaseStore.completeTeacherRedirect();
   sessionStorage.removeItem("idiomTeacherLoginRequested");
+  url.searchParams.delete("teacherLogin");
+  window.history.replaceState({}, "", url);
   if (!firebaseStore.isGoogleTeacherSignedIn) return;
   openTeacher();
   setText("#teacher-auth-status", `${firebaseStore.currentUser.email} 계정으로 로그인했습니다.`);
